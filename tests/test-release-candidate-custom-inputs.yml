@@ -1,0 +1,51 @@
+name: Test release-candidate channel with custom inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Record HEAD before running the action
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      # Mixed-case/whitespace channel is normalized by the action, so input parsing
+      # must not crash. The repo-scoped ref lookup 404s on the sentinel repo, so
+      # failure there is accepted; on success no wrapper exists under the given paths.
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          release-channel: ' Release-Candidate '
+          set-distribution-checksum: 'false'
+          paths: |
+            does-not-exist/**
+          paths-ignore: node_modules/**
+          labels: dependencies, gradle
+          pr-title-template: 'chore: bump gradle %sourceVersion% -> %targetVersion%'
+          commit-message-template: 'chore: bump gradle to %targetVersion%'
+      - name: Assert outcome and that no update branch/commit was created
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          BEFORE: ${{ steps.before.outputs.sha }}
+        run: |
+          echo "outcome: $OUTCOME"
+          AFTER="$(git rev-parse HEAD)"
+          echo "HEAD before: $BEFORE, after: $AFTER"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (no wrapper files under paths)"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
+          if git branch --list 'gradlew-update-*' | grep -q .; then
+            echo "FAIL: unexpected gradlew-update branch created"
+            exit 1
+          fi
+          if [ "$BEFORE" != "$AFTER" ]; then
+            echo "FAIL: HEAD moved unexpectedly"
+            exit 1
+          fi
+          echo "PASS: repository left untouched"

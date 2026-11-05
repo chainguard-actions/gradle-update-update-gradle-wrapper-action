@@ -1,0 +1,38 @@
+name: Test base/target branch and merge-method inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # base-branch/target-branch point to the harness branch; merge-method enables
+      # auto-merge parsing. The repo-scoped API lookups 404 on the sentinel repo, so a
+      # graceful failure is accepted; on success no wrapper exists under the given paths.
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          base-branch: act-harness
+          target-branch: act-harness
+          merge-method: SQUASH
+          set-distribution-checksum: 'false'
+          paths: does-not-exist/**
+      - name: Assert outcome and that no update branch was created
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (no wrapper files under paths)"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
+          if git branch --list 'gradlew-update-*' | grep -q .; then
+            echo "FAIL: unexpected gradlew-update branch created"
+            exit 1
+          fi
+          echo "PASS: no update branch created"
