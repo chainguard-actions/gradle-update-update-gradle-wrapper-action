@@ -8,6 +8,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit | Hardening report |
 |---------|-----|-----------------|------------------|
+| v2.0.0 | [`v2.0.0`](https://github.com/chainguard-actions/gradle-update-update-gradle-wrapper-action/tree/v2.0.0) | [`9268373`](https://github.com/gradle-update/update-gradle-wrapper-action/commit/9268373d69bd0974b6318eb3b512b8e025060bbe) | [`HARDENING.md`](https://github.com/chainguard-actions/gradle-update-update-gradle-wrapper-action/blob/v2.0.0/HARDENING.md) |
 | v2.0.1 | [`v2.0.1`](https://github.com/chainguard-actions/gradle-update-update-gradle-wrapper-action/tree/v2.0.1) | [`9cca748`](https://github.com/gradle-update/update-gradle-wrapper-action/commit/9cca748ef7cfd967bc3a5c39e15a7aa229ad1b3d) | [`HARDENING.md`](https://github.com/chainguard-actions/gradle-update-update-gradle-wrapper-action/blob/v2.0.1/HARDENING.md) |
 | v2.1.0 | [`v2.1.0`](https://github.com/chainguard-actions/gradle-update-update-gradle-wrapper-action/tree/v2.1.0) | [`512b187`](https://github.com/gradle-update/update-gradle-wrapper-action/commit/512b1875f3b6270828abfe77b247d5895a2da1e5) | [`HARDENING.md`](https://github.com/chainguard-actions/gradle-update-update-gradle-wrapper-action/blob/v2.1.0/HARDENING.md) |
 
