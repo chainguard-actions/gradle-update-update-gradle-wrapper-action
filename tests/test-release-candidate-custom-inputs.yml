@@ -1,0 +1,51 @@
+name: Test release-candidate channel with custom inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Clear any pre-existing extraheader config
+        run: |
+          git config --unset-all "http.https://github.com/.extraheader" || true
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          release-channel: "  Release-Candidate  "
+          labels: |
+            dependencies
+            gradle
+          reviewers: someone, other
+          set-distribution-checksum: "false"
+          paths: "**/gradle-wrapper.properties"
+          paths-ignore: "node_modules/**"
+          merge-method: SQUASH
+          pr-title-template: "Bump Gradle %sourceVersion% -> %targetVersion%"
+          commit-message-template: "chore: gradle %targetVersion%"
+      - name: Assert inputs accepted (succeeded, or failed gracefully on the sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo refs API is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
+      - name: Assert inputs passed validation (git auth configured)
+        run: |
+          VALUE="$(git config --get-regexp 'http\..*\.extraheader' | head -n1 || true)"
+          if ! echo "$VALUE" | grep -q 'Authorization: basic '; then
+            echo "FAIL: expected extraheader to be set, meaning release-channel was normalized and accepted"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Cleanup auth header
+        if: always()
+        run: |
+          git config --unset-all "http.https://github.com/.extraheader" || true

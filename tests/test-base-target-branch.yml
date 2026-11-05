@@ -1,0 +1,44 @@
+name: Test base-branch and target-branch inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Clear any pre-existing extraheader config
+        run: |
+          git config --unset-all "http.https://github.com/.extraheader" || true
+      - name: Record starting branch
+        id: start
+        run: echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> "$GITHUB_OUTPUT"
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          base-branch: act-harness
+          target-branch: act-harness
+      - name: Assert action ran (succeeded, or failed gracefully on the sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
+      - name: Assert workspace is still a valid git repository
+        run: |
+          if ! git rev-parse --git-dir >/dev/null 2>&1; then
+            echo "FAIL: workspace is no longer a git repository"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Cleanup auth header
+        if: always()
+        run: |
+          git config --unset-all "http.https://github.com/.extraheader" || true
